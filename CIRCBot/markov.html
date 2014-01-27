@@ -1,0 +1,87 @@
+<html>
+<head>
+<script language="javascript">
+
+var markov_terminals = {};
+var markov_startwords = [];
+var markov_wordstats = {};
+
+function markov_train (sentences) {
+    for (var i = 0; i < sentences.length; i++) {
+        var words = sentences[i].split(' ');
+        markov_terminals[words[words.length-1]] = true;
+        markov_startwords.push(words[0]);
+        for (var j = 0; j < words.length - 1; j++) {
+            if (markov_wordstats.hasOwnProperty(words[j])) {
+                markov_wordstats[words[j]].push(words[j+1]);
+            } else {
+                markov_wordstats[words[j]] = [words[j+1]];
+            }
+        }
+    }
+}
+
+function markov_choice (a) {
+    var i = Math.floor(a.length * Math.random());
+    return a[i];
+}
+
+function markov_generate (min_length) {
+    var word = markov_choice(markov_startwords);
+    var sentence = [word];
+    while (markov_wordstats.hasOwnProperty(word)) {
+        var next_words = markov_wordstats[word];
+        word = markov_choice(next_words);
+        sentence.push(word);
+        if (sentence.length > min_length && markov_terminals.hasOwnProperty(word)) break;
+    }
+    if (sentence.length < min_length) return markov_generate(min_length);
+    return sentence.join(' ');
+}
+
+
+function doTraining () {
+    var text = document.getElementById('TrainingSet').value;
+    var lines = text.split('\n');
+    markov_train(lines);
+}
+
+function doGeneration () {
+    document.getElementById('OutputSet').value = markov_generate(3);
+}
+
+function doDumpState () {
+    var state = {
+        terminals: markov_terminals,
+        startwords: markov_startwords,
+        wordstats: markov_wordstats
+    };
+    
+    document.getElementById('InternalState').value = JSON.stringify(state);
+}
+
+function doUntrain () {
+    markov_terminals = {};
+    markov_startwords = [];
+    markov_wordstats = {};
+}
+
+</script>
+</head>
+<body>
+
+Training:<br />
+<textarea id="TrainingSet" cols="90" rows="20"></textarea><br />
+<button onclick="doTraining();">Train</button> <button onclick="doUntrain();">Untrain</button>
+<br />
+<br />
+Output:<br />
+<textarea id="OutputSet" cols="90" rows="2"></textarea><br />
+<button onclick="doGeneration();">Generate</button>
+<br />
+<br />
+Internal state:<br />
+<textarea id="InternalState" cols="90" rows="20"></textarea></br >
+<button onclick="doDumpState();">Dump State</button>
+</body>
+</html>
